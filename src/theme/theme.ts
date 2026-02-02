@@ -167,6 +167,7 @@ export const theme = createTheme({
     shadows.soft,
     shadows.floating,
     shadows.card,
+    shadows.soft,
   ],
   components: {
     MuiCard: {

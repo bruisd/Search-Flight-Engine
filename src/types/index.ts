@@ -1,4 +1,4 @@
-export type { Flight, FlightSegment, CabinClass } from './flight';
+export type { Flight, FlightSegment, CabinClass, AirlineInfo } from './flight';
 export type { SearchParams, Airport, TripType } from './search';
 export type {
   FlightFilters,

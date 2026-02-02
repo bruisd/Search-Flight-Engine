@@ -5,8 +5,8 @@ import {
   useReducer,
   useMemo,
   useEffect,
-  ReactNode,
 } from 'react';
+import type { ReactNode } from 'react';
 import { useFlightSearch, type FlightSearchParams } from '../hooks';
 import type { Flight, AirlineInfo } from '../types';
 

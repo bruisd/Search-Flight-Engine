@@ -1,3 +1,8 @@
+export interface AirlineInfo {
+  code: string;
+  name: string;
+}
+
 export interface FlightSegment {
   readonly airline: string;
   readonly flightNumber: string;
