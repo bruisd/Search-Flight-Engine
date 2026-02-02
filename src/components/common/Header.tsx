@@ -65,83 +65,8 @@ function Header({ transparent = false }: HeaderProps) {
           </Box>
         )}
 
-        {/* Right: Auth Buttons */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          {/* Support Link (hidden on mobile) */}
-          {!isMobile && (
-            <>
-              <Button
-                sx={{
-                  fontSize: '0.875rem',
-                  fontWeight: 500,
-                  color: '#616f89',
-                  textTransform: 'none',
-                  padding: '8px 12px',
-                  minWidth: 'auto',
-                  '&:hover': {
-                    color: '#135bec',
-                    backgroundColor: 'transparent',
-                  },
-                }}
-              >
-                Support
-              </Button>
-
-              {/* Divider */}
-              <Box
-                sx={{
-                  width: '1px',
-                  height: '24px',
-                  backgroundColor: '#e5e7eb',
-                }}
-              />
-            </>
-          )}
-
-          {/* Sign In Button */}
-          <Button
-            sx={{
-              fontSize: '0.875rem',
-              fontWeight: 700,
-              color: '#111318',
-              textTransform: 'none',
-              padding: '8px 12px',
-              minWidth: 'auto',
-              '&:hover': {
-                color: '#135bec',
-                backgroundColor: 'transparent',
-              },
-            }}
-          >
-            Sign In
-          </Button>
-
-          {/* Register Button */}
-          <Button
-            variant="contained"
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: '8px',
-              height: '40px',
-              padding: '0 20px',
-              backgroundColor: '#135bec',
-              color: '#ffffff',
-              fontSize: '0.875rem',
-              fontWeight: 700,
-              textTransform: 'none',
-              boxShadow: '0 10px 15px -3px rgba(19, 91, 236, 0.25), 0 4px 6px -2px rgba(19, 91, 236, 0.05)',
-              '&:hover': {
-                backgroundColor: '#0e4bce',
-                boxShadow: '0 10px 20px -3px rgba(19, 91, 236, 0.3), 0 4px 8px -2px rgba(19, 91, 236, 0.1)',
-              },
-            }}
-          >
-            Register
-          </Button>
-
-          {/* Mobile Menu Icon (Mobile only) */}
+        {/* Right: Mobile Menu Icon (Mobile only) */}
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
           {!isDesktop && (
             <IconButton
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}

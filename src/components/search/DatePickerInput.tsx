@@ -38,13 +38,19 @@ function DatePickerInput({
   };
 
   const handleDateChange = (newDate: Date | null) => {
-    onChange(newDate);
+    // Validate date before passing to parent
+    const validDate = newDate instanceof Date && !isNaN(newDate.getTime()) ? newDate : null;
+    onChange(validDate);
     setOpen(false);
   };
 
   const handleClose = () => {
     setOpen(false);
   };
+
+  // Validate the value prop
+  const safeValue = value instanceof Date && !isNaN(value.getTime()) ? value : null;
+  const safeMinDate = minDate instanceof Date && !isNaN(minDate.getTime()) ? minDate : undefined;
 
   // Calculate position when opening the calendar
   useEffect(() => {
@@ -57,25 +63,32 @@ function DatePickerInput({
     }
   }, [open, variant]);
 
-  const displayValue = value
+  const displayValue = safeValue
     ? variant === "mobile"
-      ? formatDateWithDay(value.toISOString())
-      : formatDate(value.toISOString())
+      ? formatDateWithDay(safeValue.toISOString())
+      : formatDate(safeValue.toISOString())
     : "";
 
-  // Custom day renderer for range highlighting
-  const renderDay = (
-    day: Date,
-    _selectedDays: Array<Date | null>,
-    pickersDayProps: PickersDayProps
-  ) => {
-    if (!departureDate || !returnDate) {
-      return <PickersDay {...pickersDayProps} />;
+  // Custom day component for range highlighting
+  const CustomDay = (props: PickersDayProps) => {
+    const { day, ...other } = props;
+
+    if (!departureDate || !returnDate || !day) {
+      return <PickersDay day={day} {...other} />;
     }
 
-    const dayTime = day.getTime();
-    const departureTime = departureDate.getTime();
-    const returnTime = returnDate.getTime();
+    // Normalize dates to compare only year, month, and day (ignore time)
+    const dayTime = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime();
+    const departureTime = new Date(
+      departureDate.getFullYear(),
+      departureDate.getMonth(),
+      departureDate.getDate()
+    ).getTime();
+    const returnTime = new Date(
+      returnDate.getFullYear(),
+      returnDate.getMonth(),
+      returnDate.getDate()
+    ).getTime();
 
     // Check if this day is the departure date
     const isDeparture = dayTime === departureTime;
@@ -86,7 +99,8 @@ function DatePickerInput({
 
     return (
       <PickersDay
-        {...pickersDayProps}
+        {...other}
+        day={day}
         sx={{
           ...(isDeparture && {
             backgroundColor: "#135bec !important",
@@ -171,7 +185,7 @@ function DatePickerInput({
               flex: 1,
               fontSize: "0.875rem",
               fontWeight: 600,
-              color: value ? "#111318" : "#94a3b8",
+              color: safeValue ? "#111318" : "#94a3b8",
             }}>
             {displayValue || placeholder}
           </Box>
@@ -195,11 +209,11 @@ function DatePickerInput({
                 },
               }}>
               <DateCalendar
-                value={value}
+                value={safeValue}
                 onChange={handleDateChange}
-                minDate={minDate}
+                minDate={safeMinDate}
                 slots={{
-                  day: renderDay as any,
+                  day: CustomDay,
                 }}
                 sx={{
                   "& .MuiPickersDay-root": {
@@ -282,7 +296,7 @@ function DatePickerInput({
             alignItems: "flex-end",
             fontSize: "0.9375rem",
             fontWeight: 500,
-            color: value ? "#111318" : "#9ca3af",
+            color: safeValue ? "#111318" : "#9ca3af",
           }}>
           {displayValue || placeholder}
         </Box>
@@ -307,11 +321,11 @@ function DatePickerInput({
                 },
               }}>
               <DateCalendar
-                value={value}
+                value={safeValue}
                 onChange={handleDateChange}
-                minDate={minDate}
+                minDate={safeMinDate}
                 slots={{
-                  day: renderDay as any,
+                  day: CustomDay,
                 }}
                 sx={{
                   "& .MuiPickersDay-root": {

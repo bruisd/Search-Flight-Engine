@@ -1,6 +1,5 @@
 import {
   Box,
-  Button,
   IconButton,
   TextField,
   useMediaQuery,
@@ -109,7 +108,7 @@ function ResultsHeader({ searchParams, onSearch, onSwap }: ResultsHeaderProps) {
           </Box>
         </Box>
 
-        {/* Right: USD, Support, Sign In */}
+        {/* Right: USD */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <Box
             component="span"
@@ -125,48 +124,6 @@ function ResultsHeader({ searchParams, onSearch, onSwap }: ResultsHeaderProps) {
           >
             USD
           </Box>
-          <Box
-            component="span"
-            sx={{
-              color: '#e5e7eb',
-            }}
-          >
-            |
-          </Box>
-          <Box
-            component="span"
-            sx={{
-              fontSize: '0.875rem',
-              fontWeight: 700,
-              color: '#616f89',
-              cursor: 'pointer',
-              '&:hover': {
-                color: '#135bec',
-              },
-            }}
-          >
-            Support
-          </Box>
-          <Button
-            variant="contained"
-            sx={{
-              height: '36px',
-              padding: '0 16px',
-              backgroundColor: '#135bec',
-              color: '#ffffff',
-              fontSize: '0.875rem',
-              fontWeight: 700,
-              borderRadius: '8px',
-              textTransform: 'none',
-              boxShadow: 'none',
-              '&:hover': {
-                backgroundColor: '#0e4bce',
-                boxShadow: 'none',
-              },
-            }}
-          >
-            Sign In
-          </Button>
         </Box>
       </Box>
 

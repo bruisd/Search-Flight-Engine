@@ -7,8 +7,6 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Divider,
-  Button,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import Logo from './Logo';
@@ -124,92 +122,6 @@ function MobileMenu({ open, onClose }: MobileMenuProps) {
               </ListItem>
             ))}
           </List>
-
-          <Divider sx={{ margin: '8px 16px' }} />
-
-          {/* Support Link */}
-          <List sx={{ padding: '8px' }}>
-            <ListItem disablePadding>
-              <ListItemButton
-                sx={{
-                  borderRadius: '12px',
-                  padding: '12px 16px',
-                  '&:hover': {
-                    backgroundColor: '#f6f6f8',
-                  },
-                }}
-              >
-                <ListItemIcon sx={{ minWidth: '40px' }}>
-                  <Icon name="help_outline" size="md" className="support-icon" />
-                  <style>
-                    {`
-                      .support-icon {
-                        color: #616f89;
-                      }
-                    `}
-                  </style>
-                </ListItemIcon>
-                <ListItemText
-                  primary="Support"
-                  primaryTypographyProps={{
-                    fontSize: '0.9375rem',
-                    fontWeight: 500,
-                    color: '#616f89',
-                  }}
-                />
-              </ListItemButton>
-            </ListItem>
-          </List>
-        </Box>
-
-        {/* Auth Buttons at Bottom */}
-        <Box
-          sx={{
-            padding: '20px',
-            borderTop: '1px solid #f0f2f4',
-            backgroundColor: '#ffffff',
-          }}
-        >
-          <Button
-            variant="outlined"
-            fullWidth
-            sx={{
-              marginBottom: '12px',
-              padding: '12px',
-              fontSize: '0.9375rem',
-              fontWeight: 600,
-              color: '#111318',
-              borderColor: '#e5e7eb',
-              borderRadius: '12px',
-              textTransform: 'none',
-              '&:hover': {
-                borderColor: '#135bec',
-                backgroundColor: 'rgba(19, 91, 236, 0.05)',
-              },
-            }}
-          >
-            Sign In
-          </Button>
-          <Button
-            variant="contained"
-            fullWidth
-            sx={{
-              padding: '12px',
-              fontSize: '0.9375rem',
-              fontWeight: 700,
-              color: '#ffffff',
-              backgroundColor: '#135bec',
-              borderRadius: '12px',
-              textTransform: 'none',
-              boxShadow: '0 4px 12px rgba(19, 91, 236, 0.2)',
-              '&:hover': {
-                backgroundColor: '#0e4bce',
-                boxShadow: '0 6px 16px rgba(19, 91, 236, 0.25)',
-              },
-            }}
-          >
-            Register
-          </Button>
         </Box>
       </Box>
     </Drawer>
