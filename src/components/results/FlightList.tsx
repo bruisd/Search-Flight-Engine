@@ -15,6 +15,8 @@ interface FlightListProps {
   onSortChange: (sort: SortOption) => void;
   onSelectFlight: (flight: Flight) => void;
   isLoading: boolean;
+  isError?: boolean;
+  error?: string | null;
   sortStats?: {
     cheapestPrice?: number;
     fastestDuration?: number;
@@ -30,6 +32,8 @@ function FlightList({
   onSortChange,
   onSelectFlight,
   isLoading,
+  isError,
+  error,
   sortStats,
 }: FlightListProps) {
   const theme = useTheme();
@@ -44,6 +48,19 @@ function FlightList({
   const handleShowMore = () => {
     setVisibleCount((prev) => Math.min(prev + FLIGHTS_PER_PAGE, flights.length));
   };
+
+  // Error state
+  if (isError) {
+    return (
+      <Box>
+        <EmptyState
+          icon="error"
+          title="Unable to load flights"
+          subtitle={error || "We couldn't find any flights. Please try adjusting your search."}
+        />
+      </Box>
+    );
+  }
 
   // Loading state
   if (isLoading) {
@@ -95,7 +112,7 @@ function FlightList({
   }
 
   // Empty state
-  if (flights.length === 0) {
+  if (!flights || flights.length === 0) {
     return (
       <Box>
         {/* Header */}

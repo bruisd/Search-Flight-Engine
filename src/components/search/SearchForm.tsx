@@ -1,13 +1,13 @@
-import { useState } from 'react';
-import { Box, Button, useMediaQuery, useTheme } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-import TripTypeToggle from './TripTypeToggle';
-import AirportAutocomplete from './AirportAutocomplete';
-import type { Airport } from './AirportAutocomplete';
-import SwapButton from './SwapButton';
-import DateRangePicker from './DateRangePicker';
-import TravelersSelect from './TravelersSelect';
-import Icon from '../common/Icon';
+import { useState } from "react";
+import { Box, Button, useMediaQuery, useTheme } from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import TripTypeToggle from "./TripTypeToggle";
+import AirportAutocomplete from "./AirportAutocomplete";
+import type { Airport } from "./AirportAutocomplete";
+import SwapButton from "./SwapButton";
+import DateRangePicker from "./DateRangePicker";
+import TravelersSelect from "./TravelersSelect";
+import Icon from "../common/Icon";
 
 export interface SearchParams {
   origin: Airport | null;
@@ -16,7 +16,7 @@ export interface SearchParams {
   returnDate: Date | null;
   passengers: number;
   cabinClass: string;
-  tripType: 'round-trip' | 'one-way' | 'multi-city';
+  tripType: "round-trip" | "one-way" | "multi-city";
 }
 
 interface SearchFormProps {
@@ -27,24 +27,28 @@ interface SearchFormProps {
 function SearchForm({ onSearch, initialParams }: SearchFormProps) {
   const theme = useTheme();
   const navigate = useNavigate();
-  const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
+  const isDesktop = useMediaQuery(theme.breakpoints.up("lg"));
 
-  const [tripType, setTripType] = useState<'round-trip' | 'one-way' | 'multi-city'>(
-    initialParams?.tripType || 'round-trip'
+  const [tripType, setTripType] = useState<
+    "round-trip" | "one-way" | "multi-city"
+  >(initialParams?.tripType || "round-trip");
+  const [origin, setOrigin] = useState<Airport | null>(
+    initialParams?.origin || null,
   );
-  const [origin, setOrigin] = useState<Airport | null>(initialParams?.origin || null);
   const [destination, setDestination] = useState<Airport | null>(
-    initialParams?.destination || null
+    initialParams?.destination || null,
   );
   const [departureDate, setDepartureDate] = useState<Date | null>(
-    initialParams?.departureDate || null
+    initialParams?.departureDate || null,
   );
   const [returnDate, setReturnDate] = useState<Date | null>(
-    initialParams?.returnDate || null
+    initialParams?.returnDate || null,
   );
-  const [passengers, setPassengers] = useState<number>(initialParams?.passengers || 1);
+  const [passengers, setPassengers] = useState<number>(
+    initialParams?.passengers || 1,
+  );
   const [cabinClass, setCabinClass] = useState<string>(
-    initialParams?.cabinClass || 'Economy'
+    initialParams?.cabinClass || "Economy",
   );
 
   const [errors, setErrors] = useState<Record<string, boolean>>({});
@@ -61,7 +65,7 @@ function SearchForm({ onSearch, initialParams }: SearchFormProps) {
     if (!origin) newErrors.origin = true;
     if (!destination) newErrors.destination = true;
     if (!departureDate) newErrors.departureDate = true;
-    if (tripType === 'round-trip' && !returnDate) newErrors.returnDate = true;
+    if (tripType === "round-trip" && !returnDate) newErrors.returnDate = true;
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -76,7 +80,7 @@ function SearchForm({ onSearch, initialParams }: SearchFormProps) {
       origin,
       destination,
       departureDate,
-      returnDate: tripType === 'one-way' ? null : returnDate,
+      returnDate: tripType === "one-way" ? null : returnDate,
       passengers,
       cabinClass,
       tripType,
@@ -86,15 +90,16 @@ function SearchForm({ onSearch, initialParams }: SearchFormProps) {
 
     // Navigate to search results with query params
     const queryParams = new URLSearchParams();
-    if (origin) queryParams.set('origin', origin.code);
-    if (destination) queryParams.set('destination', destination.code);
-    if (departureDate) queryParams.set('departureDate', departureDate.toISOString());
-    if (returnDate && tripType === 'round-trip') {
-      queryParams.set('returnDate', returnDate.toISOString());
+    if (origin) queryParams.set("origin", origin.code);
+    if (destination) queryParams.set("destination", destination.code);
+    if (departureDate)
+      queryParams.set("departureDate", departureDate.toISOString().split('T')[0]);
+    if (returnDate && tripType === "round-trip") {
+      queryParams.set("returnDate", returnDate.toISOString().split('T')[0]);
     }
-    queryParams.set('passengers', passengers.toString());
-    queryParams.set('cabinClass', cabinClass);
-    queryParams.set('tripType', tripType);
+    queryParams.set("passengers", passengers.toString());
+    queryParams.set("cabinClass", cabinClass);
+    queryParams.set("tripType", tripType);
 
     navigate(`/search?${queryParams.toString()}`);
   };
@@ -104,24 +109,23 @@ function SearchForm({ onSearch, initialParams }: SearchFormProps) {
     return (
       <Box
         sx={{
-          width: '100%',
-          maxWidth: '1152px',
-          backgroundColor: '#ffffff',
-          borderRadius: '24px',
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-          border: '1px solid #f0f2f4',
-          padding: { md: '24px', lg: '32px' },
-        }}
-      >
+          width: "100%",
+          maxWidth: "1152px",
+          backgroundColor: "#ffffff",
+          borderRadius: "24px",
+          boxShadow:
+            "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+          border: "1px solid #f0f2f4",
+          padding: { md: "24px", lg: "32px" },
+        }}>
         {/* Header Row */}
         <Box
           sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '24px',
-          }}
-        >
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "24px",
+          }}>
           <TripTypeToggle value={tripType} onChange={setTripType} />
           <TravelersSelect
             passengers={passengers}
@@ -135,17 +139,15 @@ function SearchForm({ onSearch, initialParams }: SearchFormProps) {
         {/* Input Grid */}
         <Box
           sx={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(12, 1fr)',
-            gap: '12px',
-            position: 'relative',
-          }}
-        >
+            display: "grid",
+            gridTemplateColumns: "repeat(12, 1fr)",
+            gap: "12px",
+            position: "relative",
+          }}>
           {/* Origin */}
-          <Box sx={{ gridColumn: 'span 3', position: 'relative' }}>
+          <Box sx={{ gridColumn: "span 3", position: "relative" }}>
             <AirportAutocomplete
               label="From"
-              icon="flight_takeoff"
               value={origin}
               onChange={setOrigin}
               variant="desktop"
@@ -153,21 +155,20 @@ function SearchForm({ onSearch, initialParams }: SearchFormProps) {
             {errors.origin && (
               <Box
                 sx={{
-                  position: 'absolute',
+                  position: "absolute",
                   inset: 0,
-                  border: '2px solid #ef4444',
-                  borderRadius: '12px',
-                  pointerEvents: 'none',
+                  border: "2px solid #ef4444",
+                  borderRadius: "12px",
+                  pointerEvents: "none",
                 }}
               />
             )}
           </Box>
 
           {/* Destination */}
-          <Box sx={{ gridColumn: 'span 3', position: 'relative' }}>
+          <Box sx={{ gridColumn: "span 3", position: "relative" }}>
             <AirportAutocomplete
               label="To"
-              icon="flight_land"
               value={destination}
               onChange={setDestination}
               variant="desktop"
@@ -175,11 +176,11 @@ function SearchForm({ onSearch, initialParams }: SearchFormProps) {
             {errors.destination && (
               <Box
                 sx={{
-                  position: 'absolute',
+                  position: "absolute",
                   inset: 0,
-                  border: '2px solid #ef4444',
-                  borderRadius: '12px',
-                  pointerEvents: 'none',
+                  border: "2px solid #ef4444",
+                  borderRadius: "12px",
+                  pointerEvents: "none",
                 }}
               />
             )}
@@ -187,58 +188,56 @@ function SearchForm({ onSearch, initialParams }: SearchFormProps) {
             {/* Swap Button - Positioned between origin and destination */}
             <Box
               sx={{
-                position: 'absolute',
-                left: '-25%',
-                top: '50%',
-                transform: 'translate(-50%, -50%)',
+                position: "absolute",
+                left: "-25%",
+                top: "50%",
+                transform: "translate(-50%, -50%)",
                 zIndex: 20,
-              }}
-            >
+              }}>
               <SwapButton onClick={handleSwap} variant="horizontal" />
             </Box>
           </Box>
 
           {/* Date Range */}
-          <Box sx={{ gridColumn: 'span 4' }}>
+          <Box sx={{ gridColumn: "span 4" }}>
             <DateRangePicker
               departureDate={departureDate}
               returnDate={returnDate}
               onDepartureChange={setDepartureDate}
               onReturnChange={setReturnDate}
-              isOneWay={tripType === 'one-way'}
+              isOneWay={tripType === "one-way"}
             />
           </Box>
 
           {/* Search Button */}
-          <Box sx={{ gridColumn: 'span 2' }}>
+          <Box sx={{ gridColumn: "span 2" }}>
             <Button
               variant="contained"
               onClick={handleSearch}
               sx={{
-                width: '100%',
-                height: '60px',
-                backgroundColor: '#135bec',
-                color: '#ffffff',
-                fontSize: '1rem',
+                width: "100%",
+                height: "60px",
+                backgroundColor: "#135bec",
+                color: "#ffffff",
+                fontSize: "1rem",
                 fontWeight: 700,
-                borderRadius: '12px',
-                textTransform: 'none',
-                boxShadow: '0 10px 15px -3px rgba(19, 91, 236, 0.3)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
-                '&:hover': {
-                  backgroundColor: '#0e4bce',
-                  transform: 'scale(1.02)',
-                  boxShadow: '0 20px 25px -5px rgba(19, 91, 236, 0.4)',
+                borderRadius: "12px",
+                textTransform: "none",
+                boxShadow: "0 10px 15px -3px rgba(19, 91, 236, 0.3)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
+                "&:hover": {
+                  backgroundColor: "#0e4bce",
+                  transform: "scale(1.02)",
+                  boxShadow: "0 20px 25px -5px rgba(19, 91, 236, 0.4)",
                 },
-                '&:active': {
-                  transform: 'scale(0.98)',
+                "&:active": {
+                  transform: "scale(0.98)",
                 },
-              }}
-            >
+              }}>
               <Icon name="search" size="md" className="search-icon" />
               <style>
                 {`
@@ -259,27 +258,26 @@ function SearchForm({ onSearch, initialParams }: SearchFormProps) {
   return (
     <Box
       sx={{
-        position: 'relative',
-        display: 'flex',
-        flexDirection: 'column',
-        padding: '20px',
-        backgroundColor: '#ffffff',
-        borderRadius: '12px',
-        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-        border: '1px solid rgba(0, 0, 0, 0.05)',
-      }}
-    >
+        position: "relative",
+        display: "flex",
+        flexDirection: "column",
+        padding: "20px",
+        backgroundColor: "#ffffff",
+        borderRadius: "12px",
+        boxShadow:
+          "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+        border: "1px solid rgba(0, 0, 0, 0.05)",
+      }}>
       {/* Trip Type Toggle */}
-      <Box sx={{ marginBottom: '16px' }}>
+      <Box sx={{ marginBottom: "16px" }}>
         <TripTypeToggle value={tripType} onChange={setTripType} />
       </Box>
 
       {/* From/To Inputs with Swap Button */}
-      <Box sx={{ position: 'relative', marginBottom: '16px' }}>
+      <Box sx={{ position: "relative", marginBottom: "16px" }}>
         {/* Origin */}
         <AirportAutocomplete
           label="From"
-          icon="flight_takeoff"
           value={origin}
           onChange={setOrigin}
           variant="mobile"
@@ -289,20 +287,18 @@ function SearchForm({ onSearch, initialParams }: SearchFormProps) {
         {/* Swap Button */}
         <Box
           sx={{
-            position: 'absolute',
-            top: '60px',
-            right: '16px',
+            position: "absolute",
+            top: "60px",
+            right: "16px",
             zIndex: 20,
-          }}
-        >
+          }}>
           <SwapButton onClick={handleSwap} variant="vertical" />
         </Box>
 
         {/* Destination */}
-        <Box sx={{ marginTop: '-1px' }}>
+        <Box sx={{ marginTop: "-1px" }}>
           <AirportAutocomplete
             label="To"
-            icon="flight_land"
             value={destination}
             onChange={setDestination}
             variant="mobile"
@@ -317,11 +313,11 @@ function SearchForm({ onSearch, initialParams }: SearchFormProps) {
         returnDate={returnDate}
         onDepartureChange={setDepartureDate}
         onReturnChange={setReturnDate}
-        isOneWay={tripType === 'one-way'}
+        isOneWay={tripType === "one-way"}
       />
 
       {/* Travelers & Class */}
-      <Box sx={{ marginBottom: '16px' }}>
+      <Box sx={{ marginBottom: "16px" }}>
         <TravelersSelect
           passengers={passengers}
           cabinClass={cabinClass}
@@ -336,23 +332,22 @@ function SearchForm({ onSearch, initialParams }: SearchFormProps) {
         variant="contained"
         onClick={handleSearch}
         sx={{
-          width: '100%',
-          height: '56px',
-          backgroundColor: '#135bec',
-          color: '#ffffff',
-          fontSize: '1.125rem',
+          width: "100%",
+          height: "56px",
+          backgroundColor: "#135bec",
+          color: "#ffffff",
+          fontSize: "1.125rem",
           fontWeight: 700,
-          borderRadius: '12px',
-          textTransform: 'none',
-          boxShadow: '0 10px 15px -3px rgba(59, 130, 246, 0.3)',
-          '&:hover': {
-            backgroundColor: '#0e4bce',
+          borderRadius: "12px",
+          textTransform: "none",
+          boxShadow: "0 10px 15px -3px rgba(59, 130, 246, 0.3)",
+          "&:hover": {
+            backgroundColor: "#0e4bce",
           },
-          '&:active': {
-            transform: 'scale(0.98)',
+          "&:active": {
+            transform: "scale(0.98)",
           },
-        }}
-      >
+        }}>
         Search Flights
       </Button>
     </Box>

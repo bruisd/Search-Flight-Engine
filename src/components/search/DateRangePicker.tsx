@@ -1,5 +1,5 @@
-import { Box, useMediaQuery, useTheme } from '@mui/material';
-import DatePickerInput from './DatePickerInput';
+import { Box, useMediaQuery, useTheme } from "@mui/material";
+import DatePickerInput from "./DatePickerInput";
 
 interface DateRangePickerProps {
   departureDate: Date | null;
@@ -17,7 +17,7 @@ function DateRangePicker({
   isOneWay = false,
 }: DateRangePickerProps) {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const handleDepartureChange = (date: Date | null) => {
     onDepartureChange(date);
@@ -37,12 +37,11 @@ function DateRangePicker({
     return (
       <Box
         sx={{
-          display: 'grid',
-          gridTemplateColumns: isOneWay ? '1fr' : '1fr 1fr',
-          gap: '12px',
-          marginBottom: '16px',
-        }}
-      >
+          display: "grid",
+          gridTemplateColumns: isOneWay ? "1fr" : "1fr 1fr",
+          gap: "12px",
+          marginBottom: "16px",
+        }}>
         <DatePickerInput
           label="Departure"
           value={departureDate}
@@ -71,23 +70,20 @@ function DateRangePicker({
   return (
     <Box
       sx={{
-        display: 'grid',
-        gridTemplateColumns: isOneWay ? '1fr' : '1fr 1fr',
-        gap: '1px',
-        backgroundColor: '#e5e7eb',
-        borderRadius: '12px',
-        overflow: 'hidden',
-        border: '1px solid #e5e7eb',
-        position: 'relative',
-      }}
-    >
+        display: "grid",
+        gridTemplateColumns: isOneWay ? "1fr" : "1fr 1fr",
+        gap: "1px",
+        backgroundColor: "#e5e7eb",
+        borderRadius: "12px",
+        overflow: "hidden",
+        border: "1px solid #e5e7eb",
+        position: "relative",
+      }}>
       <DatePickerInput
         label="Departure"
         value={departureDate}
         onChange={handleDepartureChange}
-        icon="calendar_today"
         variant="desktop"
-        isPrimary={true}
         minDate={new Date()}
       />
 
@@ -96,9 +92,7 @@ function DateRangePicker({
           label="Return"
           value={returnDate}
           onChange={handleReturnChange}
-          icon="calendar_today"
           variant="desktop"
-          isPrimary={false}
           minDate={departureDate || new Date()}
           placeholder="Add date"
         />

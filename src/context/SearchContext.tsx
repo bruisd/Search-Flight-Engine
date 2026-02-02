@@ -5,6 +5,8 @@ import {
   useReducer,
   useMemo,
   useEffect,
+  useCallback,
+  useRef,
 } from 'react';
 import type { ReactNode } from 'react';
 import { useFlightSearch, type FlightSearchParams } from '../hooks';
@@ -297,10 +299,28 @@ interface SearchProviderProps {
 export function SearchProvider({ children }: SearchProviderProps) {
   const [state, dispatch] = useReducer(searchReducer, initialState);
 
+  // Track last search params to prevent redundant API calls
+  const lastSearchParamsKeyRef = useRef<string>('');
+  const lastFlightSearchParamsRef = useRef<FlightSearchParams | null>(null);
+
   // Convert SearchParams to FlightSearchParams for the hook
+  // Use JSON.stringify for deep comparison to prevent unnecessary recalculations
   const flightSearchParams = useMemo(() => {
     if (!state.searchParams) return null;
-    return toFlightSearchParams(state.searchParams);
+
+    const paramsKey = JSON.stringify(state.searchParams);
+
+    // If params haven't changed, return the same object reference
+    // This prevents useFlightSearch from re-running
+    if (paramsKey === lastSearchParamsKeyRef.current) {
+      return lastFlightSearchParamsRef.current;
+    }
+
+    // Params changed, create new object and cache it
+    lastSearchParamsKeyRef.current = paramsKey;
+    const newParams = toFlightSearchParams(state.searchParams);
+    lastFlightSearchParamsRef.current = newParams;
+    return newParams;
   }, [state.searchParams]);
 
   // Use flight search hook
@@ -336,34 +356,35 @@ export function SearchProvider({ children }: SearchProviderProps) {
     return applyFilters(state.allFlights, state.filters, state.sortBy);
   }, [state.allFlights, state.filters, state.sortBy]);
 
-  // Actions
-  const setSearchParams = (params: SearchParams) => {
+  // Actions - memoized with useCallback to prevent context value from changing
+  const setSearchParams = useCallback((params: SearchParams) => {
     dispatch({ type: 'SET_SEARCH_PARAMS', payload: params });
-  };
+  }, []);
 
-  const updateFilter = <K extends keyof FlightFilters>(
+  const updateFilter = useCallback(<K extends keyof FlightFilters>(
     filterType: K,
     value: FlightFilters[K]
   ) => {
     dispatch({ type: 'UPDATE_FILTER', payload: { filterType, value } });
-  };
+  }, []);
 
-  const resetFilters = () => {
+  const resetFilters = useCallback(() => {
     dispatch({ type: 'RESET_FILTERS' });
-  };
+  }, []);
 
-  const setSortBy = (sort: 'cheapest' | 'fastest' | 'best') => {
+  const setSortBy = useCallback((sort: 'cheapest' | 'fastest' | 'best') => {
     dispatch({ type: 'SET_SORT_BY', payload: sort });
-  };
+  }, []);
 
-  const value: SearchContextValue = {
+  // Memoize the context value to prevent unnecessary re-renders
+  const value: SearchContextValue = useMemo(() => ({
     ...state,
     filteredFlights,
     setSearchParams,
     updateFilter,
     resetFilters,
     setSortBy,
-  };
+  }), [state, filteredFlights, setSearchParams, updateFilter, resetFilters, setSortBy]);
 
   return <SearchContext.Provider value={value}>{children}</SearchContext.Provider>;
 }
