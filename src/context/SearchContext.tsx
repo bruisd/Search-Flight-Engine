@@ -221,9 +221,23 @@ const initialState: SearchState = {
 function searchReducer(state: SearchState, action: SearchAction): SearchState {
   switch (action.type) {
     case 'SET_SEARCH_PARAMS':
+      // When new search params are set, immediately clear old data and show loading
       return {
         ...state,
         searchParams: action.payload,
+        isLoading: true,
+        allFlights: [],
+        airlines: [],
+        priceRange: { min: 0, max: 0 },
+        totalResults: 0,
+        filters: {
+          stops: [],
+          priceRange: [0, 0],
+          airlines: [],
+          departureTime: [],
+        },
+        isError: false,
+        error: null,
       };
 
     case 'SET_SEARCH_RESULTS': {
@@ -326,8 +340,11 @@ export function SearchProvider({ children }: SearchProviderProps) {
   // Use flight search hook
   const { data, isLoading, isError, error } = useFlightSearch(flightSearchParams);
 
-  // Update state when search results change
+  // Consolidate all state updates into single effect to prevent waterfall delays
   useEffect(() => {
+    console.log('[SearchContext] State update:', { hasData: !!data, isLoading, isError });
+
+    // If we have new data, update results and clear loading/error states
     if (data) {
       dispatch({
         type: 'SET_SEARCH_RESULTS',
@@ -338,18 +355,21 @@ export function SearchProvider({ children }: SearchProviderProps) {
           totalResults: data.totalResults,
         },
       });
+      console.log('[SearchContext] Results dispatched, isLoading will be set to false');
+      return; // SET_SEARCH_RESULTS already sets isLoading: false
     }
-  }, [data]);
 
-  // Update loading state
-  useEffect(() => {
+    // If error occurred, update error state
+    if (isError) {
+      dispatch({ type: 'SET_ERROR', payload: { isError, error } });
+      console.log('[SearchContext] Error state dispatched');
+      return;
+    }
+
+    // Otherwise just update loading state
     dispatch({ type: 'SET_LOADING', payload: isLoading });
-  }, [isLoading]);
-
-  // Update error state
-  useEffect(() => {
-    dispatch({ type: 'SET_ERROR', payload: { isError, error } });
-  }, [isError, error]);
+    console.log('[SearchContext] Loading state dispatched:', isLoading);
+  }, [data, isLoading, isError, error]);
 
   // Calculate filtered flights (memoized)
   const filteredFlights = useMemo(() => {

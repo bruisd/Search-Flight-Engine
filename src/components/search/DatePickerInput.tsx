@@ -1,6 +1,8 @@
 import { useRef, useState, useEffect } from "react";
 import { Box, ClickAwayListener, Portal } from "@mui/material";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
+import { PickersDay } from "@mui/x-date-pickers/PickersDay";
+import type { PickersDayProps } from "@mui/x-date-pickers/PickersDay";
 import Icon from "../common/Icon";
 import { formatDate, formatDateWithDay } from "../../utils/formatters";
 
@@ -12,6 +14,8 @@ interface DatePickerInputProps {
   minDate?: Date;
   icon?: string;
   variant?: "desktop" | "mobile";
+  departureDate?: Date | null;
+  returnDate?: Date | null;
 }
 
 function DatePickerInput({
@@ -22,6 +26,8 @@ function DatePickerInput({
   minDate,
   icon,
   variant = "desktop",
+  departureDate,
+  returnDate,
 }: DatePickerInputProps) {
   const inputRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
@@ -56,6 +62,59 @@ function DatePickerInput({
       ? formatDateWithDay(value.toISOString())
       : formatDate(value.toISOString())
     : "";
+
+  // Custom day renderer for range highlighting
+  const renderDay = (
+    day: Date,
+    _selectedDays: Array<Date | null>,
+    pickersDayProps: PickersDayProps
+  ) => {
+    if (!departureDate || !returnDate) {
+      return <PickersDay {...pickersDayProps} />;
+    }
+
+    const dayTime = day.getTime();
+    const departureTime = departureDate.getTime();
+    const returnTime = returnDate.getTime();
+
+    // Check if this day is the departure date
+    const isDeparture = dayTime === departureTime;
+    // Check if this day is the return date
+    const isReturn = dayTime === returnTime;
+    // Check if this day is between departure and return
+    const isBetween = dayTime > departureTime && dayTime < returnTime;
+
+    return (
+      <PickersDay
+        {...pickersDayProps}
+        sx={{
+          ...(isDeparture && {
+            backgroundColor: "#135bec !important",
+            color: "#ffffff !important",
+            "&:hover": {
+              backgroundColor: "#0e4bce !important",
+            },
+          }),
+          ...(isReturn && {
+            backgroundColor: "transparent !important",
+            color: "#135bec !important",
+            border: "2px solid #135bec !important",
+            "&:hover": {
+              backgroundColor: "rgba(19, 91, 236, 0.08) !important",
+            },
+          }),
+          ...(isBetween && {
+            backgroundColor: "rgba(19, 91, 236, 0.12) !important",
+            color: "#111318 !important",
+            borderRadius: "0 !important",
+            "&:hover": {
+              backgroundColor: "rgba(19, 91, 236, 0.2) !important",
+            },
+          }),
+        }}
+      />
+    );
+  };
 
   if (variant === "mobile") {
     return (
@@ -139,6 +198,9 @@ function DatePickerInput({
                 value={value}
                 onChange={handleDateChange}
                 minDate={minDate}
+                slots={{
+                  day: renderDay as any,
+                }}
                 sx={{
                   "& .MuiPickersDay-root": {
                     "&.Mui-selected": {
@@ -248,6 +310,9 @@ function DatePickerInput({
                 value={value}
                 onChange={handleDateChange}
                 minDate={minDate}
+                slots={{
+                  day: renderDay as any,
+                }}
                 sx={{
                   "& .MuiPickersDay-root": {
                     "&.Mui-selected": {

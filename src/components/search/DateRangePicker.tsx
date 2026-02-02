@@ -49,6 +49,8 @@ function DateRangePicker({
           icon="calendar_today"
           variant="mobile"
           minDate={new Date()}
+          departureDate={departureDate}
+          returnDate={returnDate}
         />
 
         {!isOneWay && (
@@ -60,6 +62,8 @@ function DateRangePicker({
             variant="mobile"
             minDate={departureDate || new Date()}
             placeholder="Add date"
+            departureDate={departureDate}
+            returnDate={returnDate}
           />
         )}
       </Box>
@@ -85,6 +89,8 @@ function DateRangePicker({
         onChange={handleDepartureChange}
         variant="desktop"
         minDate={new Date()}
+        departureDate={departureDate}
+        returnDate={returnDate}
       />
 
       {!isOneWay && (
@@ -95,6 +101,8 @@ function DateRangePicker({
           variant="desktop"
           minDate={departureDate || new Date()}
           placeholder="Add date"
+          departureDate={departureDate}
+          returnDate={returnDate}
         />
       )}
     </Box>

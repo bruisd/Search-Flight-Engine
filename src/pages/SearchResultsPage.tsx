@@ -2,7 +2,12 @@ import { useEffect, useState, useRef } from 'react';
 import { Box, useMediaQuery, useTheme } from '@mui/material';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useSearch } from '../context/SearchContext';
-import { Header, ErrorBoundary } from '../components/common';
+import {
+  Header,
+  ErrorBoundary,
+  FilterSidebarSkeleton,
+  PriceChartSkeleton,
+} from '../components/common';
 import { PriceTrendChart } from '../components/charts';
 import { FlightList } from '../components/results';
 import type { SortOption } from '../components/results/SortTabs';
@@ -209,19 +214,25 @@ function SearchResultsPage() {
       >
         {/* Filter Sidebar (Desktop only) */}
         {!isMobile && (
-          <FilterSidebar
-            filters={{
-              stops: filters.stops as readonly number[],
-              priceRange: { min: filters.priceRange[0], max: filters.priceRange[1] },
-              airlines: filters.airlines as readonly string[],
-              departureTime: filters.departureTime as readonly ('morning' | 'afternoon' | 'evening')[],
-            }}
-            airlines={safeAirlines}
-            priceRange={priceRange}
-            stopPrices={stopPrices}
-            onFilterChange={handleFilterChange}
-            onResetFilters={resetFilters}
-          />
+          <>
+            {isLoading ? (
+              <FilterSidebarSkeleton />
+            ) : (
+              <FilterSidebar
+                filters={{
+                  stops: filters.stops as readonly number[],
+                  priceRange: { min: filters.priceRange[0], max: filters.priceRange[1] },
+                  airlines: filters.airlines as readonly string[],
+                  departureTime: filters.departureTime as readonly ('morning' | 'afternoon' | 'evening')[],
+                }}
+                airlines={safeAirlines}
+                priceRange={priceRange}
+                stopPrices={stopPrices}
+                onFilterChange={handleFilterChange}
+                onResetFilters={resetFilters}
+              />
+            )}
+          </>
         )}
 
         {/* Main Content Area */}
@@ -236,10 +247,14 @@ function SearchResultsPage() {
           }}
         >
           {/* Price Trend Chart */}
-          <PriceTrendChart
-            flights={safeFilteredFlights}
-            variant={isMobile ? 'mobile' : 'desktop'}
-          />
+          {isLoading ? (
+            <PriceChartSkeleton variant={isMobile ? 'mobile' : 'desktop'} />
+          ) : (
+            <PriceTrendChart
+              flights={safeFilteredFlights}
+              variant={isMobile ? 'mobile' : 'desktop'}
+            />
+          )}
 
           {/* Flight List */}
           <FlightList

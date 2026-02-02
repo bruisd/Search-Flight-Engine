@@ -132,6 +132,10 @@ export async function searchFlights(params: {
   max?: number;
 }): Promise<FlightSearchResult> {
   try {
+    // Start timing
+    const startTime = performance.now();
+    console.log(`[Flight Search] Starting search: ${params.origin} → ${params.destination}`);
+
     const apiParams: Record<string, unknown> = {
       originLocationCode: params.origin,
       destinationLocationCode: params.destination,
@@ -168,8 +172,16 @@ export async function searchFlights(params: {
       apiParams
     );
 
+    const apiTime = performance.now() - startTime;
+    console.log(`[Flight Search] API response received in ${apiTime.toFixed(0)}ms`);
+
     // Transform Amadeus response to our Flight type
-    return transformFlightOffers(response);
+    const result = transformFlightOffers(response);
+
+    const totalTime = performance.now() - startTime;
+    console.log(`[Flight Search] Total time (API + transform): ${totalTime.toFixed(0)}ms, Found ${result.flights.length} flights`);
+
+    return result;
   } catch (error) {
     // Handle errors gracefully - return empty result instead of throwing
     if (import.meta.env.DEV) {

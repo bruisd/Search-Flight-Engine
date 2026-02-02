@@ -92,8 +92,8 @@ export function useFlightSearch(params: FlightSearchParams | null) {
     enabled: isValidSearchParams(params),
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: 1,
-    // Keep previous data while fetching new results
-    placeholderData: (previousData) => previousData,
+    // Don't keep previous data - show loading state instead
+    placeholderData: undefined,
   });
 
   // Extract meaningful error message
