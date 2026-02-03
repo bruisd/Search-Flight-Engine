@@ -16,7 +16,7 @@ import {
   FilterFAB,
   FilterBottomSheet,
 } from '../components/filters';
-import type { Flight } from '../types';
+import type { Flight, FlightLeg } from '../types';
 
 /**
  * Calculate the lowest price for each stop category
@@ -122,34 +122,98 @@ function SearchResultsPage() {
       return;
     }
 
-    const origin = searchParams.get('origin');
-    const destination = searchParams.get('destination');
-    const departureDate = searchParams.get('departureDate');
-    const returnDate = searchParams.get('returnDate');
+    const tripType = searchParams.get('tripType');
     const passengers = searchParams.get('passengers');
     const cabinClass = searchParams.get('cabinClass');
-    const tripType = searchParams.get('tripType');
 
-    // Validate required params
-    if (!origin || !destination || !departureDate) {
-      console.error('Missing required search parameters');
-      navigate('/');
-      return;
+    // Handle multi-city searches
+    if (tripType === 'multi-city') {
+      const legsJSON = searchParams.get('legs');
+
+      if (!legsJSON) {
+        console.error('Missing legs parameter for multi-city search');
+        navigate('/');
+        return;
+      }
+
+      try {
+        const legsData = JSON.parse(legsJSON) as Array<{
+          origin: string;
+          destination: string;
+          date: string;
+        }>;
+
+        // Validate legs data
+        if (!Array.isArray(legsData) || legsData.length < 2) {
+          console.error('Invalid legs data for multi-city search');
+          navigate('/');
+          return;
+        }
+
+        // Convert legs data to FlightLeg[] with Airport objects
+        const legs: FlightLeg[] = legsData.map((leg, index) => ({
+          id: `leg-${index + 1}`,
+          origin: {
+            code: leg.origin,
+            name: leg.origin, // We don't have full airport names in URL, use code
+            city: leg.origin,
+            country: '',
+          },
+          destination: {
+            code: leg.destination,
+            name: leg.destination,
+            city: leg.destination,
+            country: '',
+          },
+          departureDate: new Date(leg.date),
+        }));
+
+        // Mark these params as processed
+        lastParamsRef.current = paramString;
+
+        // Set multi-city search params in context (triggers API call)
+        setSearchParams({
+          origin: legs[0].origin?.code || '',
+          destination: legs[legs.length - 1].destination?.code || '',
+          departureDate: legs[0].departureDate?.toISOString().split('T')[0] || '',
+          adults: passengers ? parseInt(passengers, 10) : 1,
+          travelClass: cabinClass || 'Economy',
+          tripType: 'multi-city',
+          legs,
+        });
+      } catch (error) {
+        console.error('Error parsing multi-city legs:', error);
+        navigate('/');
+        return;
+      }
+    } else {
+      // Handle regular round-trip/one-way searches
+      const origin = searchParams.get('origin');
+      const destination = searchParams.get('destination');
+      const departureDate = searchParams.get('departureDate');
+      const returnDate = searchParams.get('returnDate');
+
+      // Validate required params
+      if (!origin || !destination || !departureDate) {
+        console.error('Missing required search parameters');
+        navigate('/');
+        return;
+      }
+
+      // Mark these params as processed
+      lastParamsRef.current = paramString;
+
+      // Set search params in context (triggers API call)
+      setSearchParams({
+        origin,
+        destination,
+        departureDate,
+        returnDate: returnDate || undefined,
+        adults: passengers ? parseInt(passengers, 10) : 1,
+        travelClass: cabinClass || 'Economy',
+        tripType: (tripType as 'one-way' | 'round-trip') || 'round-trip',
+      });
     }
-
-    // Mark these params as processed
-    lastParamsRef.current = paramString;
-
-    // Set search params in context (triggers API call)
-    setSearchParams({
-      origin,
-      destination,
-      departureDate,
-      returnDate: returnDate || undefined,
-      adults: passengers ? parseInt(passengers, 10) : 1,
-      travelClass: cabinClass || 'Economy',
-      tripType: (tripType as 'one-way' | 'round-trip' | 'multi-city') || 'round-trip',
-    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams.toString(), navigate]);
   // Note: setSearchParams is intentionally NOT in deps to prevent loops

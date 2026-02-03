@@ -238,6 +238,66 @@ class AmadeusClient {
   }
 
   /**
+   * Make an authenticated POST request to Amadeus API
+   */
+  public async post<T>(endpoint: string, data?: Record<string, unknown>): Promise<T> {
+    let retryCount = 0;
+    const maxRetries = 1;
+
+    while (retryCount <= maxRetries) {
+      try {
+        // Get access token (cached or refreshed)
+        const accessToken = await this.getAccessToken();
+
+        // Make authenticated request
+        const response = await this.axiosInstance.post<T>(endpoint, data, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          const axiosError = error as AxiosError;
+
+          // Handle 401 Unauthorized - token might be invalid, refresh and retry once
+          if (axiosError.response?.status === 401 && retryCount < maxRetries) {
+            if (import.meta.env.DEV) {
+              console.log('[Amadeus API] 401 error, refreshing token and retrying...');
+            }
+            // Clear token cache to force refresh
+            this.tokenCache = null;
+            retryCount++;
+            continue;
+          }
+
+          // Handle 429 Rate Limiting - wait and retry once
+          if (axiosError.response?.status === 429 && retryCount < maxRetries) {
+            const retryAfter = axiosError.response.headers['retry-after'];
+            const delay = retryAfter ? parseInt(retryAfter) * 1000 : 2000;
+
+            if (import.meta.env.DEV) {
+              console.log(`[Amadeus API] Rate limited, retrying after ${delay}ms...`);
+            }
+
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            retryCount++;
+            continue;
+          }
+        }
+
+        // If we get here, throw the error
+        throw this.handleError(error);
+      }
+    }
+
+    // This should never be reached, but TypeScript needs it
+    throw this.handleError(new Error('Max retries exceeded'));
+  }
+
+  /**
    * Clear token cache (useful for testing or manual refresh)
    */
   public clearTokenCache(): void {
@@ -251,4 +311,9 @@ export const amadeusClient = new AmadeusClient();
 // Export the get method as a convenient wrapper
 export const amadeusGet = <T>(endpoint: string, params?: Record<string, unknown>): Promise<T> => {
   return amadeusClient.get<T>(endpoint, params);
+};
+
+// Export the post method as a convenient wrapper
+export const amadeusPost = <T>(endpoint: string, data?: Record<string, unknown>): Promise<T> => {
+  return amadeusClient.post<T>(endpoint, data);
 };

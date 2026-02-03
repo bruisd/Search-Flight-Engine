@@ -1,6 +1,6 @@
 export { amadeusClient, amadeusGet } from './amadeusClient';
 export type { AmadeusError } from './amadeusClient';
-export { searchFlights, getFlightDetails } from './flightService';
+export { searchFlights, getFlightDetails, searchMultiCityFlights } from './flightService';
 export type {
   FlightSearchResult,
   AirlineInfo,

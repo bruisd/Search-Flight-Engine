@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { searchFlights } from '../services';
+import { searchFlights, searchMultiCityFlights } from '../services';
+import type { FlightLeg } from '../types';
 import { format } from 'date-fns';
 
 /**
@@ -13,6 +14,7 @@ export interface FlightSearchParams {
   adults: number;
   travelClass?: string; // "Economy", "Premium Economy", "Business", "First"
   nonStop?: boolean;
+  legs?: FlightLeg[]; // For multi-city searches
 }
 
 /**
@@ -35,6 +37,15 @@ function formatDateForAPI(date: string | Date): string {
  */
 function isValidSearchParams(params: FlightSearchParams | null): params is FlightSearchParams {
   if (!params) return false;
+
+  // For multi-city searches, validate legs instead
+  if (params.legs && params.legs.length >= 2) {
+    return params.legs.every(leg =>
+      leg.origin && leg.destination && leg.departureDate
+    ) && params.adults > 0;
+  }
+
+  // For regular searches, validate origin/destination/departureDate
   return !!(
     params.origin &&
     params.destination &&
@@ -74,6 +85,17 @@ export function useFlightSearch(params: FlightSearchParams | null) {
         throw new Error('Search parameters are required');
       }
 
+      // Handle multi-city searches
+      if (params.legs && params.legs.length >= 2) {
+        const result = await searchMultiCityFlights(
+          params.legs,
+          params.adults,
+          params.travelClass || 'Economy'
+        );
+        return result;
+      }
+
+      // Handle regular round-trip/one-way searches
       // Format dates for API
       const apiParams = {
         origin: params.origin,

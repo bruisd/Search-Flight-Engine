@@ -7,6 +7,13 @@ export interface Airport {
   readonly country: string;
 }
 
+export interface FlightLeg {
+  id: string; // unique id like "leg-1", "leg-2"
+  origin: Airport | null;
+  destination: Airport | null;
+  departureDate: Date | null;
+}
+
 export interface SearchParams {
   readonly origin: string;
   readonly destination: string;
@@ -17,4 +24,11 @@ export interface SearchParams {
   readonly tripType: TripType;
 }
 
-export type TripType = 'one-way' | 'round-trip';
+export interface MultiCitySearchParams {
+  readonly tripType: 'multi-city';
+  readonly legs: FlightLeg[];
+  readonly passengers: number;
+  readonly cabinClass: CabinClass;
+}
+
+export type TripType = 'one-way' | 'round-trip' | 'multi-city';

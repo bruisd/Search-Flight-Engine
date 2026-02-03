@@ -10,7 +10,7 @@ import {
 } from 'react';
 import type { ReactNode } from 'react';
 import { useFlightSearch, type FlightSearchParams } from '../hooks';
-import type { Flight, AirlineInfo } from '../types';
+import type { Flight, AirlineInfo, FlightLeg } from '../types';
 
 // ============================================================================
 // Types
@@ -31,6 +31,7 @@ export interface SearchParams {
   adults: number;
   travelClass?: string;
   tripType: 'round-trip' | 'one-way' | 'multi-city';
+  legs?: FlightLeg[]; // For multi-city searches
 }
 
 interface SearchState {
@@ -170,6 +171,7 @@ function toFlightSearchParams(params: SearchParams): FlightSearchParams {
     returnDate: params.returnDate,
     adults: params.adults,
     travelClass: params.travelClass,
+    legs: params.legs,
   };
 }
 

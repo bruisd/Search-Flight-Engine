@@ -5,5 +5,7 @@ export { default as DatePickerInput } from './DatePickerInput';
 export { default as DateRangePicker } from './DateRangePicker';
 export { default as TravelersSelect } from './TravelersSelect';
 export { default as SearchForm } from './SearchForm';
+export { default as FlightLegInput } from './FlightLegInput';
+export { default as MultiCityForm } from './MultiCityForm';
 export type { Airport } from './AirportAutocomplete';
 export type { SearchParams } from './SearchForm';

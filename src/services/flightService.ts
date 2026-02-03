@@ -1,5 +1,5 @@
-import { amadeusGet } from './amadeusClient';
-import type { Flight } from '../types';
+import { amadeusGet, amadeusPost } from './amadeusClient';
+import type { Flight, FlightLeg } from '../types';
 import { transformFlightOffers } from './transformFlights';
 
 // Result type with metadata
@@ -219,5 +219,113 @@ export async function getFlightDetails(offerId: string): Promise<Flight | null> 
       console.error('[Flight Service] Error fetching flight details:', error);
     }
     return null;
+  }
+}
+
+/**
+ * Search for multi-city flights using Amadeus Flight Offers Search API
+ *
+ * @param legs - Array of flight legs (2-5 legs, each with origin, destination, departure date)
+ * @param passengers - Number of adult passengers
+ * @param cabinClass - Cabin class preference
+ * @returns FlightSearchResult with flights, airlines, price range, and total count
+ *
+ * Features:
+ * - Supports 2-5 independent flight legs
+ * - Each leg has its own origin, destination, and departure date
+ * - Uses POST /v2/shopping/flight-offers with originDestinations array
+ * - Returns empty result on error (doesn't throw)
+ *
+ * @example
+ * const result = await searchMultiCityFlights(
+ *   [
+ *     { id: 'leg-1', origin: { code: 'JFK', ... }, destination: { code: 'LHR', ... }, departureDate: new Date('2024-10-24') },
+ *     { id: 'leg-2', origin: { code: 'LHR', ... }, destination: { code: 'CDG', ... }, departureDate: new Date('2024-10-28') }
+ *   ],
+ *   1,
+ *   'Economy'
+ * );
+ */
+export async function searchMultiCityFlights(
+  legs: FlightLeg[],
+  passengers: number,
+  cabinClass: string
+): Promise<FlightSearchResult> {
+  try {
+    // Start timing
+    const startTime = performance.now();
+    console.log(`[Multi-City Search] Starting search with ${legs.length} legs`);
+
+    // Build originDestinations array
+    const originDestinations = legs.map((leg, index) => ({
+      id: String(index + 1),
+      originLocationCode: leg.origin?.code || '',
+      destinationLocationCode: leg.destination?.code || '',
+      departureDateTimeRange: {
+        date: leg.departureDate?.toISOString().split('T')[0] || '',
+      },
+    }));
+
+    // Build travelers array
+    const travelers = Array.from({ length: passengers }, (_, i) => ({
+      id: String(i + 1),
+      travelerType: 'ADULT',
+    }));
+
+    // Map cabin class
+    const travelClassMap: Record<string, string> = {
+      Economy: 'ECONOMY',
+      'Premium Economy': 'PREMIUM_ECONOMY',
+      Business: 'BUSINESS',
+      First: 'FIRST',
+    };
+    const travelClass = travelClassMap[cabinClass] || 'ECONOMY';
+
+    // Build request body
+    const requestBody = {
+      originDestinations,
+      travelers,
+      sources: ['GDS'],
+      searchCriteria: {
+        maxFlightOffers: 50,
+        flightFilters: {
+          cabinRestrictions: [
+            {
+              cabin: travelClass,
+              coverage: 'MOST_SEGMENTS',
+              originDestinationIds: originDestinations.map((od) => od.id),
+            },
+          ],
+        },
+      },
+    };
+
+    const response = await amadeusPost<AmadeusFlightSearchResponse>(
+      '/v2/shopping/flight-offers',
+      requestBody
+    );
+
+    const apiTime = performance.now() - startTime;
+    console.log(`[Multi-City Search] API response received in ${apiTime.toFixed(0)}ms`);
+
+    // Transform Amadeus response to our Flight type
+    const result = transformFlightOffers(response);
+
+    const totalTime = performance.now() - startTime;
+    console.log(`[Multi-City Search] Total time (API + transform): ${totalTime.toFixed(0)}ms, Found ${result.flights.length} flights`);
+
+    return result;
+  } catch (error) {
+    // Handle errors gracefully - return empty result instead of throwing
+    if (import.meta.env.DEV) {
+      console.error('[Flight Service] Error searching multi-city flights:', error);
+    }
+
+    return {
+      flights: [],
+      airlines: [],
+      priceRange: { min: 0, max: 0 },
+      totalResults: 0,
+    };
   }
 }

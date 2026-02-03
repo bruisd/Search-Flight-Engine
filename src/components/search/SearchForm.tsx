@@ -7,6 +7,8 @@ import type { Airport } from "./AirportAutocomplete";
 import SwapButton from "./SwapButton";
 import DateRangePicker from "./DateRangePicker";
 import TravelersSelect from "./TravelersSelect";
+import MultiCityForm from "./MultiCityForm";
+import type { FlightLeg } from "../../types";
 import Icon from "../common/Icon";
 
 export interface SearchParams {
@@ -17,6 +19,7 @@ export interface SearchParams {
   passengers: number;
   cabinClass: string;
   tripType: "round-trip" | "one-way" | "multi-city";
+  legs?: FlightLeg[];
 }
 
 interface SearchFormProps {
@@ -28,6 +31,17 @@ function SearchForm({ onSearch, initialParams }: SearchFormProps) {
   const theme = useTheme();
   const navigate = useNavigate();
   const isDesktop = useMediaQuery(theme.breakpoints.up("lg"));
+
+  // Initialize multi-city legs
+  const getInitialLegs = (): FlightLeg[] => {
+    if (initialParams?.legs && initialParams.legs.length >= 2) {
+      return initialParams.legs;
+    }
+    return [
+      { id: 'leg-1', origin: null, destination: null, departureDate: null },
+      { id: 'leg-2', origin: null, destination: null, departureDate: null },
+    ];
+  };
 
   const [tripType, setTripType] = useState<
     "round-trip" | "one-way" | "multi-city"
@@ -50,8 +64,31 @@ function SearchForm({ onSearch, initialParams }: SearchFormProps) {
   const [cabinClass, setCabinClass] = useState<string>(
     initialParams?.cabinClass || "Economy",
   );
+  const [multiCityLegs, setMultiCityLegs] = useState<FlightLeg[]>(getInitialLegs());
 
   const [errors, setErrors] = useState<Record<string, boolean>>({});
+
+  // Handle trip type change
+  const handleTripTypeChange = (newTripType: "round-trip" | "one-way" | "multi-city") => {
+    setTripType(newTripType);
+
+    // Reset form when switching to/from multi-city
+    if (newTripType === "multi-city") {
+      // Initialize with 2 empty legs
+      setMultiCityLegs([
+        { id: 'leg-1', origin: null, destination: null, departureDate: null },
+        { id: 'leg-2', origin: null, destination: null, departureDate: null },
+      ]);
+    } else if (tripType === "multi-city") {
+      // Clear regular fields when switching from multi-city
+      setOrigin(null);
+      setDestination(null);
+      setDepartureDate(null);
+      setReturnDate(null);
+    }
+
+    setErrors({});
+  };
 
   const handleSwap = () => {
     const temp = origin;
@@ -62,10 +99,32 @@ function SearchForm({ onSearch, initialParams }: SearchFormProps) {
   const validateForm = (): boolean => {
     const newErrors: Record<string, boolean> = {};
 
-    if (!origin) newErrors.origin = true;
-    if (!destination) newErrors.destination = true;
-    if (!departureDate) newErrors.departureDate = true;
-    if (tripType === "round-trip" && !returnDate) newErrors.returnDate = true;
+    if (tripType === "multi-city") {
+      // Validate multi-city legs
+      multiCityLegs.forEach((leg, index) => {
+        if (!leg.origin) newErrors[`leg-${index}-origin`] = true;
+        if (!leg.destination) newErrors[`leg-${index}-destination`] = true;
+        if (!leg.departureDate) newErrors[`leg-${index}-date`] = true;
+
+        // Check if date is before previous leg's date
+        if (index > 0 && leg.departureDate && multiCityLegs[index - 1].departureDate) {
+          if (leg.departureDate < multiCityLegs[index - 1].departureDate!) {
+            newErrors[`leg-${index}-date`] = true;
+          }
+        }
+
+        // Check if origin and destination are the same
+        if (leg.origin && leg.destination && leg.origin.code === leg.destination.code) {
+          newErrors[`leg-${index}-destination`] = true;
+        }
+      });
+    } else {
+      // Validate regular round-trip/one-way
+      if (!origin) newErrors.origin = true;
+      if (!destination) newErrors.destination = true;
+      if (!departureDate) newErrors.departureDate = true;
+      if (tripType === "round-trip" && !returnDate) newErrors.returnDate = true;
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -76,32 +135,66 @@ function SearchForm({ onSearch, initialParams }: SearchFormProps) {
       return;
     }
 
-    const searchParams: SearchParams = {
-      origin,
-      destination,
-      departureDate,
-      returnDate: tripType === "one-way" ? null : returnDate,
-      passengers,
-      cabinClass,
-      tripType,
-    };
+    if (tripType === "multi-city") {
+      // Multi-city search
+      const searchParams: SearchParams = {
+        origin: null,
+        destination: null,
+        departureDate: null,
+        returnDate: null,
+        passengers,
+        cabinClass,
+        tripType,
+        legs: multiCityLegs,
+      };
 
-    onSearch(searchParams);
+      onSearch(searchParams);
 
-    // Navigate to search results with query params
-    const queryParams = new URLSearchParams();
-    if (origin) queryParams.set("origin", origin.code);
-    if (destination) queryParams.set("destination", destination.code);
-    if (departureDate)
-      queryParams.set("departureDate", departureDate.toISOString().split('T')[0]);
-    if (returnDate && tripType === "round-trip") {
-      queryParams.set("returnDate", returnDate.toISOString().split('T')[0]);
+      // Navigate to search results with multi-city query params
+      const queryParams = new URLSearchParams();
+      queryParams.set("tripType", "multi-city");
+
+      // Encode legs as JSON
+      const legsData = multiCityLegs.map(leg => ({
+        origin: leg.origin?.code || '',
+        destination: leg.destination?.code || '',
+        date: leg.departureDate?.toISOString().split('T')[0] || '',
+      }));
+      queryParams.set("legs", JSON.stringify(legsData));
+
+      queryParams.set("passengers", passengers.toString());
+      queryParams.set("cabinClass", cabinClass);
+
+      navigate(`/search?${queryParams.toString()}`);
+    } else {
+      // Regular round-trip/one-way search
+      const searchParams: SearchParams = {
+        origin,
+        destination,
+        departureDate,
+        returnDate: tripType === "one-way" ? null : returnDate,
+        passengers,
+        cabinClass,
+        tripType,
+      };
+
+      onSearch(searchParams);
+
+      // Navigate to search results with query params
+      const queryParams = new URLSearchParams();
+      if (origin) queryParams.set("origin", origin.code);
+      if (destination) queryParams.set("destination", destination.code);
+      if (departureDate)
+        queryParams.set("departureDate", departureDate.toISOString().split('T')[0]);
+      if (returnDate && tripType === "round-trip") {
+        queryParams.set("returnDate", returnDate.toISOString().split('T')[0]);
+      }
+      queryParams.set("passengers", passengers.toString());
+      queryParams.set("cabinClass", cabinClass);
+      queryParams.set("tripType", tripType);
+
+      navigate(`/search?${queryParams.toString()}`);
     }
-    queryParams.set("passengers", passengers.toString());
-    queryParams.set("cabinClass", cabinClass);
-    queryParams.set("tripType", tripType);
-
-    navigate(`/search?${queryParams.toString()}`);
   };
 
   // Desktop Layout
@@ -126,130 +219,145 @@ function SearchForm({ onSearch, initialParams }: SearchFormProps) {
             alignItems: "center",
             marginBottom: "24px",
           }}>
-          <TripTypeToggle value={tripType} onChange={setTripType} />
-          <TravelersSelect
+          <TripTypeToggle value={tripType} onChange={handleTripTypeChange} />
+          {tripType !== "multi-city" && (
+            <TravelersSelect
+              passengers={passengers}
+              cabinClass={cabinClass}
+              onPassengersChange={setPassengers}
+              onCabinClassChange={setCabinClass}
+              variant="desktop"
+            />
+          )}
+        </Box>
+
+        {/* Conditional rendering based on trip type */}
+        {tripType === "multi-city" ? (
+          <MultiCityForm
+            legs={multiCityLegs}
             passengers={passengers}
             cabinClass={cabinClass}
+            onLegsChange={setMultiCityLegs}
             onPassengersChange={setPassengers}
             onCabinClassChange={setCabinClass}
-            variant="desktop"
+            onSearch={handleSearch}
           />
-        </Box>
+        ) : (
+          /* Regular Round-trip/One-way Input Grid */
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "repeat(12, 1fr)",
+              gap: "12px",
+              position: "relative",
+            }}>
+            {/* Origin */}
+            <Box sx={{ gridColumn: "span 3", position: "relative" }}>
+              <AirportAutocomplete
+                label="From"
+                value={origin}
+                onChange={setOrigin}
+                variant="desktop"
+              />
+              {errors.origin && (
+                <Box
+                  sx={{
+                    position: "absolute",
+                    inset: 0,
+                    border: "2px solid #ef4444",
+                    borderRadius: "12px",
+                    pointerEvents: "none",
+                  }}
+                />
+              )}
+            </Box>
 
-        {/* Input Grid */}
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: "repeat(12, 1fr)",
-            gap: "12px",
-            position: "relative",
-          }}>
-          {/* Origin */}
-          <Box sx={{ gridColumn: "span 3", position: "relative" }}>
-            <AirportAutocomplete
-              label="From"
-              value={origin}
-              onChange={setOrigin}
-              variant="desktop"
-            />
-            {errors.origin && (
+            {/* Destination */}
+            <Box sx={{ gridColumn: "span 3", position: "relative" }}>
+              <AirportAutocomplete
+                label="To"
+                value={destination}
+                onChange={setDestination}
+                variant="desktop"
+              />
+              {errors.destination && (
+                <Box
+                  sx={{
+                    position: "absolute",
+                    inset: 0,
+                    border: "2px solid #ef4444",
+                    borderRadius: "12px",
+                    pointerEvents: "none",
+                  }}
+                />
+              )}
+
+              {/* Swap Button - Positioned between origin and destination */}
               <Box
                 sx={{
                   position: "absolute",
-                  inset: 0,
-                  border: "2px solid #ef4444",
-                  borderRadius: "12px",
-                  pointerEvents: "none",
-                }}
-              />
-            )}
-          </Box>
+                  left: "-25%",
+                  top: "50%",
+                  transform: "translate(-50%, -50%)",
+                  zIndex: 20,
+                }}>
+                <SwapButton onClick={handleSwap} variant="horizontal" />
+              </Box>
+            </Box>
 
-          {/* Destination */}
-          <Box sx={{ gridColumn: "span 3", position: "relative" }}>
-            <AirportAutocomplete
-              label="To"
-              value={destination}
-              onChange={setDestination}
-              variant="desktop"
-            />
-            {errors.destination && (
-              <Box
+            {/* Date Range */}
+            <Box sx={{ gridColumn: "span 4" }}>
+              <DateRangePicker
+                departureDate={departureDate}
+                returnDate={returnDate}
+                onDepartureChange={setDepartureDate}
+                onReturnChange={setReturnDate}
+                isOneWay={tripType === "one-way"}
+              />
+            </Box>
+
+            {/* Search Button */}
+            <Box sx={{ gridColumn: "span 2" }}>
+              <Button
+                variant="contained"
+                onClick={handleSearch}
                 sx={{
-                  position: "absolute",
-                  inset: 0,
-                  border: "2px solid #ef4444",
+                  width: "100%",
+                  height: "60px",
+                  backgroundColor: "#135bec",
+                  color: "#ffffff",
+                  fontSize: "1rem",
+                  fontWeight: 700,
                   borderRadius: "12px",
-                  pointerEvents: "none",
-                }}
-              />
-            )}
-
-            {/* Swap Button - Positioned between origin and destination */}
-            <Box
-              sx={{
-                position: "absolute",
-                left: "-25%",
-                top: "50%",
-                transform: "translate(-50%, -50%)",
-                zIndex: 20,
-              }}>
-              <SwapButton onClick={handleSwap} variant="horizontal" />
+                  textTransform: "none",
+                  boxShadow: "0 10px 15px -3px rgba(19, 91, 236, 0.3)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                  transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
+                  "&:hover": {
+                    backgroundColor: "#0e4bce",
+                    transform: "scale(1.02)",
+                    boxShadow: "0 20px 25px -5px rgba(19, 91, 236, 0.4)",
+                  },
+                  "&:active": {
+                    transform: "scale(0.98)",
+                  },
+                }}>
+                <Icon name="search" size="md" className="search-icon" />
+                <style>
+                  {`
+                    .search-icon {
+                      color: #ffffff;
+                    }
+                  `}
+                </style>
+                Search
+              </Button>
             </Box>
           </Box>
-
-          {/* Date Range */}
-          <Box sx={{ gridColumn: "span 4" }}>
-            <DateRangePicker
-              departureDate={departureDate}
-              returnDate={returnDate}
-              onDepartureChange={setDepartureDate}
-              onReturnChange={setReturnDate}
-              isOneWay={tripType === "one-way"}
-            />
-          </Box>
-
-          {/* Search Button */}
-          <Box sx={{ gridColumn: "span 2" }}>
-            <Button
-              variant="contained"
-              onClick={handleSearch}
-              sx={{
-                width: "100%",
-                height: "60px",
-                backgroundColor: "#135bec",
-                color: "#ffffff",
-                fontSize: "1rem",
-                fontWeight: 700,
-                borderRadius: "12px",
-                textTransform: "none",
-                boxShadow: "0 10px 15px -3px rgba(19, 91, 236, 0.3)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "8px",
-                transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
-                "&:hover": {
-                  backgroundColor: "#0e4bce",
-                  transform: "scale(1.02)",
-                  boxShadow: "0 20px 25px -5px rgba(19, 91, 236, 0.4)",
-                },
-                "&:active": {
-                  transform: "scale(0.98)",
-                },
-              }}>
-              <Icon name="search" size="md" className="search-icon" />
-              <style>
-                {`
-                  .search-icon {
-                    color: #ffffff;
-                  }
-                `}
-              </style>
-              Search
-            </Button>
-          </Box>
-        </Box>
+        )}
       </Box>
     );
   }
@@ -270,86 +378,101 @@ function SearchForm({ onSearch, initialParams }: SearchFormProps) {
       }}>
       {/* Trip Type Toggle */}
       <Box sx={{ marginBottom: "16px" }}>
-        <TripTypeToggle value={tripType} onChange={setTripType} />
+        <TripTypeToggle value={tripType} onChange={handleTripTypeChange} />
       </Box>
 
-      {/* From/To Inputs with Swap Button */}
-      <Box sx={{ position: "relative", marginBottom: "16px" }}>
-        {/* Origin */}
-        <AirportAutocomplete
-          label="From"
-          value={origin}
-          onChange={setOrigin}
-          variant="mobile"
-          borderRadius="top"
-        />
-
-        {/* Swap Button */}
-        <Box
-          sx={{
-            position: "absolute",
-            top: "60px",
-            right: "16px",
-            zIndex: 20,
-          }}>
-          <SwapButton onClick={handleSwap} variant="vertical" />
-        </Box>
-
-        {/* Destination */}
-        <Box sx={{ marginTop: "-1px" }}>
-          <AirportAutocomplete
-            label="To"
-            value={destination}
-            onChange={setDestination}
-            variant="mobile"
-            borderRadius="bottom"
-          />
-        </Box>
-      </Box>
-
-      {/* Date Inputs */}
-      <DateRangePicker
-        departureDate={departureDate}
-        returnDate={returnDate}
-        onDepartureChange={setDepartureDate}
-        onReturnChange={setReturnDate}
-        isOneWay={tripType === "one-way"}
-      />
-
-      {/* Travelers & Class */}
-      <Box sx={{ marginBottom: "16px" }}>
-        <TravelersSelect
+      {/* Conditional rendering based on trip type */}
+      {tripType === "multi-city" ? (
+        <MultiCityForm
+          legs={multiCityLegs}
           passengers={passengers}
           cabinClass={cabinClass}
+          onLegsChange={setMultiCityLegs}
           onPassengersChange={setPassengers}
           onCabinClassChange={setCabinClass}
-          variant="mobile"
+          onSearch={handleSearch}
         />
-      </Box>
+      ) : (
+        <>
+          {/* From/To Inputs with Swap Button */}
+          <Box sx={{ position: "relative", marginBottom: "16px" }}>
+            {/* Origin */}
+            <AirportAutocomplete
+              label="From"
+              value={origin}
+              onChange={setOrigin}
+              variant="mobile"
+              borderRadius="top"
+            />
 
-      {/* Search Button */}
-      <Button
-        variant="contained"
-        onClick={handleSearch}
-        sx={{
-          width: "100%",
-          height: "56px",
-          backgroundColor: "#135bec",
-          color: "#ffffff",
-          fontSize: "1.125rem",
-          fontWeight: 700,
-          borderRadius: "12px",
-          textTransform: "none",
-          boxShadow: "0 10px 15px -3px rgba(59, 130, 246, 0.3)",
-          "&:hover": {
-            backgroundColor: "#0e4bce",
-          },
-          "&:active": {
-            transform: "scale(0.98)",
-          },
-        }}>
-        Search Flights
-      </Button>
+            {/* Swap Button */}
+            <Box
+              sx={{
+                position: "absolute",
+                top: "60px",
+                right: "16px",
+                zIndex: 20,
+              }}>
+              <SwapButton onClick={handleSwap} variant="vertical" />
+            </Box>
+
+            {/* Destination */}
+            <Box sx={{ marginTop: "-1px" }}>
+              <AirportAutocomplete
+                label="To"
+                value={destination}
+                onChange={setDestination}
+                variant="mobile"
+                borderRadius="bottom"
+              />
+            </Box>
+          </Box>
+
+          {/* Date Inputs */}
+          <DateRangePicker
+            departureDate={departureDate}
+            returnDate={returnDate}
+            onDepartureChange={setDepartureDate}
+            onReturnChange={setReturnDate}
+            isOneWay={tripType === "one-way"}
+          />
+
+          {/* Travelers & Class */}
+          <Box sx={{ marginBottom: "16px" }}>
+            <TravelersSelect
+              passengers={passengers}
+              cabinClass={cabinClass}
+              onPassengersChange={setPassengers}
+              onCabinClassChange={setCabinClass}
+              variant="mobile"
+            />
+          </Box>
+
+          {/* Search Button */}
+          <Button
+            variant="contained"
+            onClick={handleSearch}
+            sx={{
+              width: "100%",
+              height: "56px",
+              backgroundColor: "#135bec",
+              color: "#ffffff",
+              fontSize: "1.125rem",
+              fontWeight: 700,
+              borderRadius: "12px",
+              textTransform: "none",
+              boxShadow: "0 10px 15px -3px rgba(59, 130, 246, 0.3)",
+              "&:hover": {
+                backgroundColor: "#0e4bce",
+              },
+              "&:active": {
+                transform: "scale(0.98)",
+              },
+            }}>
+            Search Flights
+          </Button>
+        </>
+      )}
     </Box>
   );
 }
